@@ -1,10 +1,11 @@
 import {DataWrapper} from '@/components';
 import {CharacterModel, CharacterService} from '@/domain/character';
+import {PagedData} from '@/types';
 import {Card, Image, Text} from '@rneui/themed';
+import _ from 'lodash';
 import React, {Reducer, useReducer, useState} from 'react';
 import {useEffect} from 'react';
 import {FlatList, StyleSheet, View} from 'react-native';
-import {Endpoint, useDLE} from 'rest-hooks';
 
 const styles = StyleSheet.create({
   container: {
@@ -39,12 +40,7 @@ const styles = StyleSheet.create({
 
 export const CharactersView: React.FC = () => {
   const [page, setPage] = useState(1);
-  const {data, loading, error} = useDLE(
-    new Endpoint(CharacterService.loadCharacters),
-    {
-      page,
-    },
-  );
+  const [data, setData] = useState<PagedData<CharacterModel> | null>(null);
   const [accumulatedData, reduceAccumulatedData] = useReducer<
     Reducer<CharacterModel[], CharacterModel[]>
   >(
@@ -53,13 +49,16 @@ export const CharactersView: React.FC = () => {
   );
 
   useEffect(() => reduceAccumulatedData(data?.results || []), [data]);
+  useEffect(() => {
+    CharacterService.loadCharacters({page}).then(setData);
+  }, [page]);
 
   return (
     <>
       <DataWrapper
         data={accumulatedData}
-        loading={loading && !accumulatedData}
-        error={error}>
+        loading={_.isNil(data) && accumulatedData.length === 0}
+        error={undefined}>
         {results => (
           <View style={styles.container}>
             <FlatList
@@ -90,7 +89,9 @@ export const CharactersView: React.FC = () => {
                   </View>
                 </Card>
               )}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={item =>
+                'character_' + item.id.toString() + page.toString()
+              }
               onEndReached={() =>
                 page < (data?.info.pages || 0) - 1 && setPage(page + 1)
               }

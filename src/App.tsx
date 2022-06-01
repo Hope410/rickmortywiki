@@ -1,8 +1,6 @@
 import {Tab, TabView} from '@rneui/themed';
 import React from 'react';
-import {ScrollView, StyleSheet} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {CacheProvider} from 'rest-hooks';
+import {StyleSheet, View} from 'react-native';
 import {CharactersView} from './views/characters';
 import {EpisodesView} from './views/episodes';
 import {LocationsView} from './views/locations';
@@ -51,7 +49,7 @@ const App = () => {
   const [index, setIndex] = React.useState(0);
 
   return (
-    <CacheProvider>
+    <>
       <TabView
         containerStyle={styles.tabView}
         value={index}
@@ -78,7 +76,7 @@ const App = () => {
           />
         ))}
       </Tab>
-    </CacheProvider>
+    </>
   );
 };
 

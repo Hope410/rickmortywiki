@@ -1,10 +1,11 @@
 import {DataWrapper} from '@/components';
 import {LocationModel, LocationService} from '@/domain/location';
+import {PagedData} from '@/types';
 import {Card, Text} from '@rneui/themed';
+import _ from 'lodash';
 import React, {Reducer, useReducer, useState} from 'react';
 import {useEffect} from 'react';
 import {FlatList, StyleSheet, View} from 'react-native';
-import {Endpoint, useDLE} from 'rest-hooks';
 
 const styles = StyleSheet.create({
   container: {
@@ -35,12 +36,7 @@ const styles = StyleSheet.create({
 
 export const LocationsView: React.FC = () => {
   const [page, setPage] = useState(1);
-  const {data, loading, error} = useDLE(
-    new Endpoint(LocationService.loadLocations),
-    {
-      page,
-    },
-  );
+  const [data, setData] = useState<PagedData<LocationModel> | null>(null);
   const [accumulatedData, reduceAccumulatedData] = useReducer<
     Reducer<LocationModel[], LocationModel[]>
   >(
@@ -49,13 +45,16 @@ export const LocationsView: React.FC = () => {
   );
 
   useEffect(() => reduceAccumulatedData(data?.results || []), [data]);
+  useEffect(() => {
+    LocationService.loadLocations({page}).then(setData);
+  }, [page]);
 
   return (
     <>
       <DataWrapper
         data={accumulatedData}
-        loading={loading && !accumulatedData}
-        error={error}>
+        loading={_.isNil(data) && accumulatedData.length === 0}
+        error={undefined}>
         {results => (
           <View style={styles.container}>
             <FlatList
@@ -77,7 +76,9 @@ export const LocationsView: React.FC = () => {
                   </View>
                 </Card>
               )}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={item =>
+                'location_' + item.id.toString() + page.toString()
+              }
               onEndReached={() =>
                 page < (data?.info.pages || 0) - 1 && setPage(page + 1)
               }
